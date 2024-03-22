@@ -1,0 +1,17 @@
+!pip install diffusers transformers accelerate safetensors compel wget peft
+
+import torch
+from diffusers import (StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, AutoencoderKL)
+from compel import Compel, ReturnedEmbeddingsType
+from PIL import Image
+
+image_num_count = 0
+vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
+
+civitai_api_key = "5b1eddecf976934ea69e129e9c83dc8b"
+!wget https://civitai.com/api/download/models/384264?token={civitai_api_key} -O AnythingXL_xl.safetensors
+pipe = StableDiffusionXLPipeline.from_single_file("AnythingXL_xl.safetensors", load_safety_checker=False, extract_ema=True, torch_dtype=torch.float16).to("cuda")
+#pipe = StableDiffusionXLPipeline.from_pretrained("cagliostrolab/animagine-xl-3.1", vae=vae, torch_dtype=torch.float16, use_safetensors=True, ).to("cuda")
+
+base_compel = Compel(tokenizer=[pipe.tokenizer, pipe.tokenizer_2], text_encoder=[pipe.text_encoder, pipe.text_encoder_2],
+ returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED, requires_pooled=[False, True])
